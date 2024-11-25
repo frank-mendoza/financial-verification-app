@@ -1,7 +1,7 @@
 import { Router } from "express";
-import { verifyStatement } from "../controllers/financeCOntroller.js";
 import multer from "multer";
 import fs from "fs";
+import { verifyStatement } from "../controllers/financeController";
 
 const uploadPath = "uploads/";
 if (!fs.existsSync(uploadPath)) {
