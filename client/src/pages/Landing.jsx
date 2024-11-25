@@ -7,7 +7,7 @@ import "./Landing.scss";
 import customFetch from "../utils/customFetch";
 import { useContext, useRef, useState } from "react";
 import { Form } from "react-router-dom";
-import { Center, Flex, Grid, GridItem } from "@chakra-ui/react";
+import { Center, Flex, Grid, GridItem, Image } from "@chakra-ui/react";
 import { AppContext } from "../context";
 import ReceiptDisplay from "./ReceiptDisplay";
 
@@ -155,14 +155,11 @@ const Landing = () => {
                     gap={10}
                     flexDirection={{ xs: "column", xl: "row" }}
                   >
-                    <img
+                    <Image
                       src={file.url}
                       alt={file.name}
-                      // fit={"contain"}
-                      style={{
-                        width: !isVerified ? "100%" : "50%",
-                        objectFit: "contain",
-                      }}
+                      fit={"contain"}
+                      style={{ width: !isVerified ? "100%" : "50%" }}
                     />
 
                     {isVerified && renderResults(file.name)}

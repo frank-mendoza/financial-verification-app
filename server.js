@@ -52,6 +52,16 @@ app.use("*", (req, res) => {
   });
 });
 
+app.use(
+  helmet.contentSecurityPolicy({
+    directives: {
+      defaultSrc: ["'self'"],
+      imgSrc: ["'self'", "data:", "blob:"],
+      // Add other necessary directives...
+    },
+  })
+);
+
 app.use(errorHandlerMiddleware);
 
 const port = process.env.PORT || 5100;
