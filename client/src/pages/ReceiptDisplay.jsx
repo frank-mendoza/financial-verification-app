@@ -3,7 +3,6 @@
 import { Flex, List, Text } from "@chakra-ui/react";
 
 const ReceiptDisplay = ({ data }) => {
-  console.log(data);
   const { address, date, manager, items, file_name } = data;
   return (
     <div style={{ maxWidth: "600px", width: "50%" }}>

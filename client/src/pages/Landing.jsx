@@ -5,9 +5,9 @@ import Wrapper from "../assets/wrappers/LandingPage";
 import { Loading } from "../components";
 import "./Landing.scss";
 import customFetch from "../utils/customFetch";
-import { useContext, useRef, useState } from "react";
+import { useContext, useEffect, useRef, useState } from "react";
 import { Form } from "react-router-dom";
-import { Center, Flex, Grid, GridItem, Image } from "@chakra-ui/react";
+import { Center, Flex, Grid, GridItem } from "@chakra-ui/react";
 import { AppContext } from "../context";
 import ReceiptDisplay from "./ReceiptDisplay";
 
@@ -28,7 +28,7 @@ const Landing = () => {
   const handleFileChange = (e) => {
     const files = e.target.files;
 
-    const fileArray = Object.values(files);
+    const fileArray = Array.from(files);
     setSelectedFilesObj(files);
 
     const validFiles = fileArray.filter((file) => {
@@ -42,9 +42,15 @@ const Landing = () => {
       }
       return true;
     });
+
     setSelectedFiles(
       validFiles.map((file) => {
-        file.url = URL.createObjectURL(file);
+        const reader = new FileReader();
+        reader.onload = () => {
+          file.url = reader.result;
+          // setImageSrc(reader.result); // This uses a data URI.
+        };
+        reader.readAsDataURL(file);
         return file;
       })
     );
@@ -89,6 +95,18 @@ const Landing = () => {
       return <ReceiptDisplay data={foundFile} />;
     }
   };
+
+  useEffect(() => {
+    // Cleanup blob URLs when component unmounts or imageSrc changes
+    return () => {
+      selectedFiles.forEach((file) => {
+        if (file.url) {
+          URL.revokeObjectURL(file.url);
+        }
+      });
+    };
+  }, [selectedFiles]);
+
   return (
     <Wrapper>
       <div className="landing">
@@ -155,12 +173,17 @@ const Landing = () => {
                     gap={10}
                     flexDirection={{ xs: "column", xl: "row" }}
                   >
-                    <Image
-                      src={file.url}
-                      alt={file.name}
-                      fit={"contain"}
-                      style={{ width: !isVerified ? "100%" : "50%" }}
-                    />
+                    {file.url && (
+                      <img
+                        src={file.url}
+                        alt={file.name}
+                        // fit={"contain"}
+                        style={{
+                          width: !isVerified ? "100%" : "50%",
+                          objectFit: "contain",
+                        }}
+                      />
+                    )}
 
                     {isVerified && renderResults(file.name)}
                   </Flex>
