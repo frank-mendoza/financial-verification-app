@@ -171,10 +171,12 @@ const Landing = () => {
                   <Flex
                     align={"start"}
                     gap={10}
-                    flexDirection={{ xs: "column", xl: "row" }}
+                    className="doc-wrapper"
+                    // flexDirection={{ xs: "column" }}
                   >
                     {file.url && (
                       <img
+                        className="doc-image"
                         src={file.url}
                         alt={file.name}
                         // fit={"contain"}

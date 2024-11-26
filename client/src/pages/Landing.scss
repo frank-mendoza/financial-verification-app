@@ -13,6 +13,12 @@
     margin-top: 50px;
     width: 100%;
   }
+
+  .doc-wrapper {
+    padding-top: 36px;
+    border-top: 1px solid #eee;
+  }
+
   &-docs {
     display: flex;
     gap: 20px;
@@ -34,6 +40,24 @@
   ul {
     li {
       text-align: left;
+    }
+  }
+
+  @media screen and (max-width: 768px) {
+    .button-wrapper {
+      flex-direction: column;
+      margin-top: 24px;
+    }
+    .doc-wrapper {
+      flex-direction: column;
+    }
+
+    .doc-details {
+      width: 100% !important;
+    }
+
+    .doc-image {
+      width: 100% !important;
     }
   }
 }

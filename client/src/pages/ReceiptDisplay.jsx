@@ -5,7 +5,7 @@ import { Flex, List, Text } from "@chakra-ui/react";
 const ReceiptDisplay = ({ data }) => {
   const { address, date, manager, items, file_name } = data;
   return (
-    <div style={{ maxWidth: "600px", width: "50%" }}>
+    <div className="doc-details" style={{ maxWidth: "600px", width: "50%" }}>
       <Text fontWeight={900} my={10} mt={0} textStyle={"2xl"}>
         Document Details
       </Text>
