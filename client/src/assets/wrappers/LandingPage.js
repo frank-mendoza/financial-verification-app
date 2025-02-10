@@ -1,8 +1,8 @@
-import styled from 'styled-components';
+import styled from "styled-components";
 
 const Wrapper = styled.section`
   nav {
-    width: var(--fluid-width);
+    width: 100%;
     max-width: var(--max-width);
     margin: 0 auto;
     height: var(--nav-height);

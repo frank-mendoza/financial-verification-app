@@ -11,7 +11,9 @@ export const AppProvider = ({ children }) => {
   };
 
   return (
-    <AppContext.Provider value={{ verifiedDocs, handleFileResults }}>
+    <AppContext.Provider
+      value={{ verifiedDocs, handleFileResults, setVerifiedDocs }}
+    >
       {children}
     </AppContext.Provider>
   );

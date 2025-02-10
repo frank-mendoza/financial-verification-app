@@ -7,7 +7,25 @@ import "./Landing.scss";
 import customFetch from "../utils/customFetch";
 import { useContext, useEffect, useRef, useState } from "react";
 import { Form } from "react-router-dom";
-import { Center, Flex, Grid, GridItem } from "@chakra-ui/react";
+import { Button, Center, Flex, Image, Text } from "@chakra-ui/react";
+
+import {
+  FileUploadDropzone,
+  FileUploadList,
+  FileUploadRoot,
+} from "../components/ui/file-upload";
+
+import {
+  DialogBody,
+  DialogCloseTrigger,
+  DialogActionTrigger,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogRoot,
+  DialogTitle,
+  DialogTrigger,
+} from "../components/ui/dialog";
 import { AppContext } from "../context";
 import ReceiptDisplay from "./ReceiptDisplay";
 
@@ -17,16 +35,31 @@ export const action = async () => {
 const MAX_FILE_SIZE = 1 * 1024 * 1024;
 
 const Landing = () => {
-  const { handleFileResults, verifiedDocs } = useContext(AppContext);
+  const { handleFileResults, verifiedDocs, setVerifiedDocs } = useContext(
+    AppContext
+  );
+  const [fileList, setFileList] = useState({
+    acceptedFiles: [],
+    rejectedFiles: [],
+  });
   const [loading, setLoading] = useState(false);
   const [selectedFiles, setSelectedFiles] = useState([]);
   const [selectedFilesObj, setSelectedFilesObj] = useState(null);
   const [isVerified, setIsVerified] = useState(false);
+  const [showDetails, setShowDetails] = useState({
+    id: "",
+    show: false,
+  });
   const fileInputRef = useRef();
 
   // Handle file selection
   const handleFileChange = (e) => {
-    const files = e.target.files;
+    console.log(e);
+    const files = [
+      ...new Map(e.acceptedFiles.map((item) => [item.name, item])).values(),
+    ];
+
+    setFileList(e);
 
     const fileArray = Array.from(files);
     setSelectedFilesObj(files);
@@ -88,11 +121,129 @@ const Landing = () => {
     }
   };
 
-  const renderResults = (name) => {
-    const foundFile = verifiedDocs.find((obj) => obj.file_name === name);
+  const renderResults = (file) => {
+    const foundFile = verifiedDocs.find((obj) => obj.file_name === file.name);
 
     if (foundFile) {
-      return <ReceiptDisplay data={foundFile} />;
+      return (
+        file.url && (
+          <Flex flexDirection={"column"} alignItems={"center"} gap={0}>
+            <div>
+              <Image
+                className="doc-image"
+                src={file.url}
+                alt={file.name}
+                rounded="md"
+                height={300}
+                maxWidth={"100%"}
+                width={300}
+              />
+              <Text
+                mt={5}
+                textAlign={"left"}
+                truncate
+                textStyle={"md"}
+                fontWeight={"medium"}
+              >
+                {file.name}
+              </Text>
+            </div>
+            <Flex
+              width={"100%"}
+              justifyContent={"space-between"}
+              alignItems={"center"}
+            >
+              <DialogRoot
+                placement={"center"}
+                motionPreset="slide-in-bottom"
+                size={"lg"}
+              >
+                <DialogTrigger asChild>
+                  <Button
+                    variant={"surface"}
+                    onClick={() =>
+                      setShowDetails({
+                        id: file.name,
+                        show: true,
+                      })
+                    }
+                    colorPalette={"cyan"}
+                  >
+                    Show Verified Data
+                  </Button>
+                </DialogTrigger>
+
+                {file.name === showDetails.id && (
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>{file.name}</DialogTitle>
+                    </DialogHeader>
+                    <DialogBody>
+                      {isVerified && <ReceiptDisplay data={foundFile} />}
+                    </DialogBody>
+                    <DialogFooter justifyContent={"space-between"}>
+                      <DialogActionTrigger asChild>
+                        <Button
+                          variant="outline"
+                          onClick={() => {
+                            setShowDetails({
+                              id: "",
+                              show: false,
+                            });
+                          }}
+                        >
+                          Close
+                        </Button>
+                      </DialogActionTrigger>
+                      {/* <Button>Export File</Button> */}
+                    </DialogFooter>
+                    <DialogCloseTrigger />
+                  </DialogContent>
+                )}
+              </DialogRoot>
+              <Button
+                colorPalette={"red"}
+                variant={"surface"}
+                onClick={() => {
+                  const foundFile = selectedFiles.find(
+                    (obj) => obj.name === file.name
+                  );
+
+                  const getFilteredFiles = (files, key) => {
+                    return files.filter((obj) => obj[key] !== file.name);
+                  };
+                  if (foundFile) {
+                    const filtedred = getFilteredFiles(selectedFiles, "name");
+
+                    const filtedredVerifiedDoc = getFilteredFiles(
+                      verifiedDocs,
+                      "file_name"
+                    );
+
+                    const filtedredVerifiedDocObj = getFilteredFiles(
+                      selectedFilesObj,
+                      "name"
+                    );
+                    const filtedredFileList = getFilteredFiles(
+                      fileList.acceptedFiles,
+                      "name"
+                    );
+
+                    fileList.acceptedFiles = filtedredFileList;
+                    setFileList(fileList);
+                    setVerifiedDocs(filtedredVerifiedDoc);
+                    setSelectedFiles(filtedred);
+                    setSelectedFilesObj(filtedredVerifiedDocObj);
+                    setIsVerified(false);
+                  }
+                }}
+              >
+                Remove
+              </Button>
+            </Flex>
+          </Flex>
+        )
+      );
     }
   };
 
@@ -117,43 +268,40 @@ const Landing = () => {
           </h1>
 
           <Center flexDirection={"column"}>
-            <Form
-              method="post"
-              className="form"
-              // for file uploads, this is very important
-              // send this as formdata not an object
-              // encType="multipart/form-data"
-            >
-              <div className="form-row">
-                <label htmlFor="image" className="form-label">
-                  Select file to verify
-                </label>
-                <input
-                  type="file"
-                  id="file"
-                  name="file"
-                  className="form-input"
-                  multiple
-                  onChange={handleFileChange}
-                  ref={fileInputRef} // Reference to the file input
-                  accept="image/jpeg,image/png"
+            <Form method="post" className="form">
+              <FileUploadRoot
+                onFileChange={handleFileChange}
+                maxW="xl"
+                ref={fileInputRef}
+                alignItems="stretch"
+                maxFiles={5}
+                value={fileList}
+                name="file"
+                accept={["image/jpeg", "image/png"]}
+              >
+                <FileUploadDropzone
+                  // ref={fileRef}
+                  label="Drag and drop here to upload"
+                  description=".png, .jpg up to 1MB"
                 />
-              </div>
+                <FileUploadList clearable files={selectedFiles} />
+              </FileUploadRoot>
               <div className="button-wrapper">
                 <button
                   className="btn btn-block form-btn"
-                  type="submit"
+                  // type="submit"
                   disabled={isVerified}
                   onClick={handleUpload}
                 >
                   Verify Document
                 </button>
+
                 <button
                   className="btn btn-block form-btn"
                   onClick={() => {
                     setSelectedFiles([]);
                     setSelectedFilesObj(null);
-                    setIsVerified(false);
+                    setVerifiedDocs([]);
                     fileInputRef.current.value = null;
                   }}
                 >
@@ -161,37 +309,18 @@ const Landing = () => {
                 </button>
               </div>
             </Form>
-            <Grid mt={20} templateColumns="repeat(2, 1fr)" gap="6">
+            <Flex mt={20} gap="6" className="content-flex">
               {selectedFiles.map((file, key) => (
-                <GridItem
-                  colSpan={isVerified ? 2 : 1}
-                  sm={isVerified ? 2 : 1}
+                <Flex
                   key={key}
+                  align={"start"}
+                  justifyContent={"center"}
+                  gap={10}
                 >
-                  <Flex
-                    align={"start"}
-                    gap={10}
-                    className="doc-wrapper"
-                    // flexDirection={{ xs: "column" }}
-                  >
-                    {file.url && (
-                      <img
-                        className="doc-image"
-                        src={file.url}
-                        alt={file.name}
-                        // fit={"contain"}
-                        style={{
-                          width: !isVerified ? "100%" : "50%",
-                          objectFit: "contain",
-                        }}
-                      />
-                    )}
-
-                    {isVerified && renderResults(file.name)}
-                  </Flex>
-                </GridItem>
+                  {renderResults(file)}
+                </Flex>
               ))}
-            </Grid>
+            </Flex>
           </Center>
         </div>
       </div>

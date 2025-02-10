@@ -1,72 +1,94 @@
 /* eslint-disable react/prop-types */
 
 import { Flex, List, Text } from "@chakra-ui/react";
+import { NumericFormat } from "react-number-format";
 
 const ReceiptDisplay = ({ data }) => {
-  const { address, date, manager, items, file_name } = data;
+  const { address, date, items } = data;
   return (
-    <div className="doc-details" style={{ maxWidth: "600px", width: "50%" }}>
-      <Text fontWeight={900} my={10} mt={0} textStyle={"2xl"}>
+    <div className="doc-details">
+      <Text
+        fontWeight={700}
+        mb={2}
+        pt={5}
+        borderTop={"1px solid #eeeeee"}
+        textStyle={"xl"}
+      >
         Document Details
       </Text>
 
       <div
         style={{
-          border: "1px solid #ddd",
-          borderRadius: "8px",
-          marginBottom: "20px",
-          padding: "20px",
+          borderBottom: "1px solid #eeeeee",
+          // borderRadius: "8px",
+          // marginBottom: "20px",
+          paddingBottom: 30,
         }}
       >
-        {file_name && (
-          <Text textStyle={"1xl"}>
-            <strong>File Name:</strong> {file_name}
+        {address && (
+          <Text fontSize={16}>
+            <strong>Address:</strong> {address}
           </Text>
         )}
-        {address && (
-          <p>
-            <strong>Address:</strong> {address}
-          </p>
-        )}
         {date && (
-          <p>
+          <Text my={3} fontSize={16}>
             <strong>Date:</strong> {date}
-          </p>
+          </Text>
         )}
-        {manager && (
+        {/* {manager && (
           <p>
             <strong>Manager:</strong> {manager}
           </p>
-        )}
+        )} */}
 
         {items && (
           <>
-            <Text textStyle={"xl"} fontWeight={700}>
+            {/* <Text fontSize={20} textStyle={"xl"} fontWeight={700}>
               Items
-            </Text>
+            </Text> */}
 
-            <List.Root mt={5}>
+            <List.Root mt={3}>
               {Object.entries(items).map(
                 ([itemName, price], itemIndex) =>
                   itemName !== "total" && (
                     <Flex
-                      // my={1}
+                      my={2}
                       key={itemIndex}
                       justifyContent={"space-between"}
+                      borderTop={"1px solid #eee"}
+                      paddingTop={4}
                     >
-                      <Text textTransform={"capitalize"}>
-                        <strong>{itemName.replace(/_/g, " ")}:</strong>
+                      <Text fontSize={16} textTransform={"capitalize"}>
+                        <Text fontWeight={"600"}>
+                          {itemName.replace(/_/g, " ")}:
+                        </Text>
                       </Text>
-                      <Text>${price.toFixed(2)}</Text>
+                      <NumericFormat
+                        value={price.toFixed(2)}
+                        // customInput={Input}
+                        displayType="text"
+                        thousandSeparator
+                        renderText={(value) => <>₱{value}</>}
+                      />
+                      {/* ;<Text fontSize={16}>₱{price.toFixed(2)}</Text> */}
                     </Flex>
                   )
               )}
             </List.Root>
             {items.total && (
-              <Flex justifyContent={"end"}>
-                <Text textAlign={"end"} textStyle={"2xl"}>
-                  <strong>Total:</strong> ${items.total.toFixed(2)}
-                </Text>
+              <Flex mt={10} justifyContent={"end"} gap={2}>
+                <Text textStyle={"2xl"} fontWeight={"600"}>
+                  Total:
+                </Text>{" "}
+                <NumericFormat
+                  value={items.total.toFixed(2)}
+                  // customInput={Input}
+                  displayType="text"
+                  thousandSeparator
+                  renderText={(value) => (
+                    <Text textStyle={"2xl"}>₱{value}</Text>
+                  )}
+                />
               </Flex>
             )}
           </>

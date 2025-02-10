@@ -1,17 +1,60 @@
 .landing {
   height: 100%;
-  width: 90vw;
+  width: 100%;
   max-width: 1120px;
   justify-content: center;
   align-items: center;
   display: flex;
   text-align: center;
-  padding-top: 150px;
+  padding: 150px 0;
   margin: 0 auto;
 
   .form {
     margin-top: 50px;
     width: 100%;
+    max-width: 100%;
+
+    .chakra-file-upload__root {
+      max-width: 100%;
+    }
+  }
+
+  .css-cwqj6a {
+    position: relative;
+    background-color: #ebebeb3b;
+    padding: 24px;
+    // height: 200px;
+
+    img {
+      // height: 300px;
+      object-fit: cover;
+    }
+
+    .card-wrapper {
+      position: absolute;
+      transition: all 0.2s ease;
+      left: 0;
+      width: 100%;
+      background-color: #20202083;
+    }
+
+    .hidden {
+      opacity: 0;
+      height: 0;
+      top: -10%;
+    }
+
+    .show {
+      height: 100%;
+      top: 0;
+      transition: all 0.2s ease;
+      opacity: 1;
+    }
+
+    // &:hover {
+    //   .card-wrapper {
+    //   }
+    // }
   }
 
   .doc-wrapper {
@@ -30,6 +73,7 @@
     align-items: center;
     justify-content: space-between;
     gap: 20px;
+    margin-top: 16px;
   }
 
   p,
@@ -58,6 +102,10 @@
 
     .doc-image {
       width: 100% !important;
+    }
+
+    .content-flex {
+      flex-direction: column;
     }
   }
 }
