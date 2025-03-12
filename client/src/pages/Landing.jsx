@@ -7,7 +7,18 @@ import "./Landing.scss";
 import customFetch from "../utils/customFetch";
 import { useContext, useEffect, useRef, useState } from "react";
 import { Form } from "react-router-dom";
-import { Button, Center, Flex, Image, Text } from "@chakra-ui/react";
+import {
+  Accordion,
+  Avatar,
+  Button,
+  Center,
+  Dialog,
+  Flex,
+  HStack,
+  Image,
+  Portal,
+  Text,
+} from "@chakra-ui/react";
 
 import {
   FileUploadDropzone,
@@ -15,19 +26,8 @@ import {
   FileUploadRoot,
 } from "../components/ui/file-upload";
 
-import {
-  DialogBody,
-  DialogCloseTrigger,
-  DialogActionTrigger,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogRoot,
-  DialogTitle,
-  DialogTrigger,
-} from "../components/ui/dialog";
 import { AppContext } from "../context";
-import ReceiptDisplay from "./ReceiptDisplay";
+import { CloseButton } from "../components/ui/close-button";
 
 export const action = async () => {
   return null;
@@ -42,19 +42,26 @@ const Landing = () => {
     acceptedFiles: [],
     rejectedFiles: [],
   });
+
+  const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [selectedFiles, setSelectedFiles] = useState([]);
   const [selectedFilesObj, setSelectedFilesObj] = useState(null);
   const [isVerified, setIsVerified] = useState(false);
-  const [showDetails, setShowDetails] = useState({
-    id: "",
-    show: false,
-  });
+  const [openedDoc, setOpenedDoc] = useState("");
   const fileInputRef = useRef();
 
+  console.log(verifiedDocs);
+  console.log(selectedFiles);
   // Handle file selection
   const handleFileChange = (e) => {
-    console.log(e);
+    setSelectedFiles([]);
+    setSelectedFilesObj(null);
+    setFileList({
+      acceptedFiles: [],
+      rejectedFiles: [],
+    });
+
     const files = [
       ...new Map(e.acceptedFiles.map((item) => [item.name, item])).values(),
     ];
@@ -69,10 +76,10 @@ const Landing = () => {
         toast.error(`${file.name} exceeds the maximum file size of 1MB.`);
         return false; // Exclude files that are too large
       }
-      if (file.type === "application/pdf") {
-        toast.error(`PDF file in not supported!`);
-        return false; // Exclude files that are too large
-      }
+      // if (file.type === "application/pdf") {
+      //   toast.error(`PDF file in not supported!`);
+      //   return false; // Exclude files that are too large
+      // }
       return true;
     });
 
@@ -105,14 +112,16 @@ const Landing = () => {
 
     try {
       const data = await customFetch.post("/verification", formData);
+      setTimeout(() => {
+        // Clear the file input after submitting
 
-      handleFileResults(data.data);
-      toast.success("Verified successfully!");
-      setIsVerified(true);
-      // Clear the file input after submitting
-
-      // setSelectedFiles([]); // Clear the selected files state
-      setLoading(false);
+        // setSelectedFiles([]); // Clear the selected files state
+        setOpen(true);
+        handleFileResults(data.data);
+        toast.success("Verified successfully!");
+        setIsVerified(true);
+        setLoading(false);
+      }, 3000);
     } catch (error) {
       setIsVerified(false);
       setLoading(false);
@@ -121,128 +130,101 @@ const Landing = () => {
     }
   };
 
-  const renderResults = (file) => {
-    const foundFile = verifiedDocs.find((obj) => obj.file_name === file.name);
+  const renderResults = () => {
+    if (verifiedDocs.length > 0) {
+      const updatedVerifiedDocs = verifiedDocs.map((obj) => {
+        const foundImg = selectedFiles.find(
+          (file) => file.name === obj.fileName
+        );
 
-    if (foundFile) {
+        if (foundImg) {
+          return {
+            ...obj,
+            url: foundImg.url,
+          };
+        }
+      });
+
       return (
-        file.url && (
-          <Flex flexDirection={"column"} alignItems={"center"} gap={0}>
-            <div>
-              <Image
-                className="doc-image"
-                src={file.url}
-                alt={file.name}
-                rounded="md"
-                height={300}
-                maxWidth={"100%"}
-                width={300}
-              />
-              <Text
-                mt={5}
-                textAlign={"left"}
-                truncate
-                textStyle={"md"}
-                fontWeight={"medium"}
-              >
-                {file.name}
-              </Text>
-            </div>
-            <Flex
-              width={"100%"}
-              justifyContent={"space-between"}
-              alignItems={"center"}
-            >
-              <DialogRoot
-                placement={"center"}
-                motionPreset="slide-in-bottom"
-                size={"lg"}
-              >
-                <DialogTrigger asChild>
-                  <Button
-                    variant={"surface"}
-                    onClick={() =>
-                      setShowDetails({
-                        id: file.name,
-                        show: true,
-                      })
-                    }
-                    colorPalette={"cyan"}
-                  >
-                    Show Verified Data
-                  </Button>
-                </DialogTrigger>
+        <Portal>
+          <Dialog.Backdrop />
+          <Dialog.Positioner>
+            <Dialog.Content>
+              <Dialog.Header>
+                <Flex justifyContent={"space-between"}>
+                  <Dialog.Title>Extracted Documents</Dialog.Title>
+                  <Dialog.CloseTrigger asChild>
+                    <CloseButton size="sm" />
+                  </Dialog.CloseTrigger>
+                </Flex>
+              </Dialog.Header>
+              <Dialog.Body>
+                <Accordion.Root
+                  collapsible
+                  defaultValue={verifiedDocs[0]?.fileName}
+                  value={openedDoc}
+                  onValueChange={(e) => setOpenedDoc(e.value)}
+                >
+                  {updatedVerifiedDocs.map((item, index) => (
+                    <Accordion.Item key={index} value={item?.fileName}>
+                      <Accordion.ItemTrigger>
+                        <Avatar.Root shape="rounded">
+                          <Avatar.Image src={item.url} objectFit={"cover"} />
+                          <Avatar.Fallback name={item.fileName} />
+                        </Avatar.Root>
+                        <HStack flex="1">{item.fileName} </HStack>
+                        <Accordion.ItemIndicator />
+                      </Accordion.ItemTrigger>
+                      <Accordion.ItemContent>
+                        <Accordion.ItemBody>
+                          <Flex gap={10} flexDirection={"column"}>
+                            <Image
+                              width="500px"
+                              // height="200px"
+                              src={item.url}
+                            />
 
-                {file.name === showDetails.id && (
-                  <DialogContent>
-                    <DialogHeader>
-                      <DialogTitle>{file.name}</DialogTitle>
-                    </DialogHeader>
-                    <DialogBody>
-                      {isVerified && <ReceiptDisplay data={foundFile} />}
-                    </DialogBody>
-                    <DialogFooter justifyContent={"space-between"}>
-                      <DialogActionTrigger asChild>
-                        <Button
-                          variant="outline"
-                          onClick={() => {
-                            setShowDetails({
-                              id: "",
-                              show: false,
-                            });
-                          }}
-                        >
-                          Close
-                        </Button>
-                      </DialogActionTrigger>
-                      {/* <Button>Export File</Button> */}
-                    </DialogFooter>
-                    <DialogCloseTrigger />
-                  </DialogContent>
-                )}
-              </DialogRoot>
-              <Button
-                colorPalette={"red"}
-                variant={"surface"}
-                onClick={() => {
-                  const foundFile = selectedFiles.find(
-                    (obj) => obj.name === file.name
-                  );
+                            <div>
+                              {/* <Heading size={"md"}>Document details:</Heading> */}
+                              {Object.entries(item).map(([key, value]) => {
+                                const formattedKey = key
+                                  .replace(/([A-Z])/g, " $1")
+                                  .replace(/^./, (str) => str.toUpperCase());
 
-                  const getFilteredFiles = (files, key) => {
-                    return files.filter((obj) => obj[key] !== file.name);
-                  };
-                  if (foundFile) {
-                    const filtedred = getFilteredFiles(selectedFiles, "name");
-
-                    const filtedredVerifiedDoc = getFilteredFiles(
-                      verifiedDocs,
-                      "file_name"
-                    );
-
-                    const filtedredVerifiedDocObj = getFilteredFiles(
-                      selectedFilesObj,
-                      "name"
-                    );
-                    const filtedredFileList = getFilteredFiles(
-                      fileList.acceptedFiles,
-                      "name"
-                    );
-
-                    fileList.acceptedFiles = filtedredFileList;
-                    setFileList(fileList);
-                    setVerifiedDocs(filtedredVerifiedDoc);
-                    setSelectedFiles(filtedred);
-                    setSelectedFilesObj(filtedredVerifiedDocObj);
-                    setIsVerified(false);
-                  }
-                }}
-              >
-                Remove
-              </Button>
-            </Flex>
-          </Flex>
-        )
+                                if (key === "fileName" || key === "url")
+                                  return null;
+                                return (
+                                  <Flex my={5} gap={5} key={key}>
+                                    <Text fontSize={"1xl"} fontWeight={500}>
+                                      {formattedKey}:
+                                    </Text>{" "}
+                                    <Text fontSize={"1xl"}>
+                                      {" "}
+                                      {typeof value === "number"
+                                        ? "₱"
+                                        : null}{" "}
+                                      {value}
+                                    </Text>
+                                  </Flex>
+                                );
+                              })}
+                            </div>
+                          </Flex>
+                        </Accordion.ItemBody>
+                      </Accordion.ItemContent>
+                    </Accordion.Item>
+                  ))}
+                </Accordion.Root>
+              </Dialog.Body>
+              <Dialog.Footer>
+                <Dialog.ActionTrigger asChild>
+                  <Button variant="outline">Close</Button>
+                </Dialog.ActionTrigger>
+                <Button>Export File</Button>
+              </Dialog.Footer>
+            </Dialog.Content>
+          </Dialog.Positioner>
+        </Portal>
       );
     }
   };
@@ -277,7 +259,7 @@ const Landing = () => {
                 maxFiles={5}
                 value={fileList}
                 name="file"
-                accept={["image/jpeg", "image/png"]}
+                accept={["image/jpeg", "image/png", "application/pdf"]}
               >
                 <FileUploadDropzone
                   // ref={fileRef}
@@ -287,40 +269,54 @@ const Landing = () => {
                 <FileUploadList clearable files={selectedFiles} />
               </FileUploadRoot>
               <div className="button-wrapper">
-                <button
-                  className="btn btn-block form-btn"
-                  // type="submit"
-                  disabled={isVerified}
-                  onClick={handleUpload}
-                >
-                  Verify Document
-                </button>
+                {verifiedDocs.length > 0 ? (
+                  <Dialog.Root
+                    style={{ height: "auto" }}
+                    lazyMount
+                    open={open}
+                    onOpenChange={(e) => setOpen(e.open)}
+                    size="xl"
+                    placement="center"
+                    motionPreset="slide-in-bottom"
+                  >
+                    <Dialog.Trigger asChild>
+                      <Button
+                        variant="solid"
+                        size="sm"
+                        onClick={() => setOpen(true)}
+                      >
+                        View Document Details
+                      </Button>
+                    </Dialog.Trigger>
 
-                <button
-                  className="btn btn-block form-btn"
+                    {renderResults()}
+                  </Dialog.Root>
+                ) : (
+                  <Button
+                    // className="btn btn-block form-btn"
+                    // type="submit"
+                    disabled={isVerified}
+                    onClick={handleUpload}
+                  >
+                    Verify Document
+                  </Button>
+                )}
+
+                <Button
+                  variant={"outline"}
+                  // className="btn btn-block form-btn"
                   onClick={() => {
                     setSelectedFiles([]);
                     setSelectedFilesObj(null);
                     setVerifiedDocs([]);
+                    setIsVerified(false);
                     fileInputRef.current.value = null;
                   }}
                 >
                   Clear
-                </button>
+                </Button>
               </div>
             </Form>
-            <Flex mt={20} gap="6" className="content-flex">
-              {selectedFiles.map((file, key) => (
-                <Flex
-                  key={key}
-                  align={"start"}
-                  justifyContent={"center"}
-                  gap={10}
-                >
-                  {renderResults(file)}
-                </Flex>
-              ))}
-            </Flex>
           </Center>
         </div>
       </div>

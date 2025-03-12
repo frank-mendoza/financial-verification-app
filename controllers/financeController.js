@@ -2,54 +2,13 @@ import { StatusCodes } from "http-status-codes";
 import path from "path";
 import Tesseract from "tesseract.js";
 import { nanoid } from "nanoid";
-import { writeFileSync } from "fs";
 
-import { BadRequestError } from "../errors/customErrors.js";
-
-const processFinancialStatement = (text) => {
-  // Remove the heading line "Financial Statement for Year 2024"
-  const lines = text.split("\n").slice(1); // Skip the first line
-
-  const filteredLines = [];
-  let skip = false;
-
-  lines.forEach((line) => {
-    if (line.startsWith("****")) {
-      // Toggle skip mode on encountering a line with only asterisks
-      skip = !skip;
-    } else if (!skip && line) {
-      // Add line to filteredLines only if skip is off and line is not empty
-      filteredLines.push(line);
-    }
-  });
-
-  // Initialize an empty object to store the extracted data
-  const data = {};
-
-  // Process each line and extract the key-value pairs
-  filteredLines.forEach((line) => {
-    let [key, value] = line.includes(":")
-      ? line.split(":").map((part) => part.trim()) // Split by colon if present
-      : line.match(/^(.*?)(\d+[\d,]*\.*\d*)$/) // Regex to handle no-colon cases
-      ? line
-          .match(/^(.*?)(\d+[\d,]*\.*\d*)$/)
-          .slice(1, 3)
-          .map((part) => part.trim())
-      : [line, ""]; // Fallback for lines without values
-
-    if (key && value) {
-      const formattedKey = key
-        .toLowerCase()
-        .replace(/[^a-zA-Z0-9\s]/g, "")
-        .replace(/\s+/g, "_")
-        .replace(/_+$/, "");
-
-      data[formattedKey] = parseFloat(value.replace(/,/g, "")) || value;
-    }
-  });
-
-  return data;
-};
+import {
+  parseAcknowledgementReceipt,
+  parseVoucherText,
+  processFinancialStatement,
+  shoppeOrderSummary,
+} from "../utils/helper.js";
 
 // Helper function to validate if the text contains financial statement indicators
 const isValidFinancialStatement = (text) => {
@@ -66,6 +25,8 @@ const isValidFinancialStatement = (text) => {
     "subtotal",
     "balance",
     "date",
+    "cash",
+    "voucher",
   ];
   const textLower = text.toLowerCase();
 
@@ -88,51 +49,97 @@ export const verifyStatement = async (req, res) => {
         `${nanoid()}-${file.originalname}`
       );
 
-      // Await the recognition result for each file
-      const {
-        data: { text },
-      } = await Tesseract.recognize(
-        file.buffer,
-        "eng", // Language setting
-        {
-          logger: (m) => console.log(m), // Optional: logs progress
-        }
-      );
-
-      // Process the extracted text
-      const parsedData = processFinancialStatement(text);
-
-      // Validate that the text contains indicators of a financial statement
-      if (!isValidFinancialStatement(text)) {
-        throw new BadRequestError(
-          `The file ${file.originalname} does not appear to be a financial statement.`
+      if (file.mimetype === "application/pdf") {
+        // let pdfText = "";
+        // PdfParse(file.buffer)
+        //   .then((data) => {
+        //     console.log(data.text);
+        //   })
+        //   .catch((err) => console.error(err));
+      } else {
+        // Await the recognition result for each file
+        const {
+          data: { text },
+        } = await Tesseract.recognize(
+          file.buffer,
+          "eng", // Language setting
+          {
+            // logger: (m) => console.log(m), // Optional: logs progress
+          }
         );
+
+        // Process the extracted text
+        const parsedData = processFinancialStatement(text);
+        let result;
+
+        if (text.includes("CASH VOUCHER")) {
+          // for cash voucher
+          const voucherObject = parseVoucherText(text);
+          result = voucherObject;
+          console.log(voucherObject, "voucherObject");
+        } else if (
+          text.includes(
+            "ACKNOWLEDGEMENT RECIEPT" ||
+              text.includes("ACKNOWLEDGEMENT RECEIPT")
+          )
+        ) {
+          //for acknowledgement receipt
+          const acknowledgementReceipt = parseAcknowledgementReceipt(text);
+          result = acknowledgementReceipt;
+
+          // console.log(acknowledgementReceipt, "acknowledgementReceipt");
+        } else {
+          // const regularReceipt = parseOrderSummary(text);
+          // console.log(regularReceipt);
+
+          // const shoppeOrderSummary = parseShoppeOrderSummary(text);
+          const shoppeOrderSummaryReceipt = shoppeOrderSummary(text);
+          result = shoppeOrderSummaryReceipt;
+          // console.log(shoppeOrderSummaryReceipt);
+        }
+
+        const formattedResult = {
+          ...result,
+          fileName: file.originalname,
+        };
+
+        console.log(formattedResult);
+        groupedData.push(formattedResult);
+        // const shoppeOrderSummary = parseShoppeOrderSummary(text);
+        // console.log(shoppeOrderSummary, "shoppeOrderSummary ----");
       }
 
-      const items = Object.keys(parsedData)
-        .filter((key) => typeof parsedData[key] === "number")
-        // .reduce((sum, value) => sum + value, 0) // Filter numeric fields
-        .reduce((obj, key) => {
-          obj[key] = parsedData[key]; // Add the numeric fields to the new object
-          return obj;
-        }, {});
+      // // Validate that the text contains indicators of a financial statement
+      // if (!isValidFinancialStatement(text)) {
+      //   throw new BadRequestError(
+      //     `The file ${file.originalname} does not appear to be a financial statement.`
+      //   );
+      // }
 
-      const total = Object.values(items)
-        .filter((value) => typeof value === "number") // Keep only number values
-        .reduce((sum, value) => sum + value, 0); // Sum up the values
+      // const items = Object.keys(parsedData)
+      //   .filter((key) => typeof parsedData[key] === "number")
+      //   // .reduce((sum, value) => sum + value, 0) // Filter numeric fields
+      //   .reduce((obj, key) => {
+      //     obj[key] = parsedData[key]; // Add the numeric fields to the new object
+      //     return obj;
+      //   }, {});
 
-      // Add the total as a new field in the object
-      items.total = parseFloat(total.toFixed(2));
-      parsedData.items = items;
+      // const total = Object.values(items)
+      //   .filter((value) => typeof value === "number") // Keep only number values
+      //   .reduce((sum, value) => sum + value, 0); // Sum up the values
 
-      Object.keys(items).forEach((key) => {
-        delete parsedData[key];
-      });
+      // // Add the total as a new field in the object
+      // items.total = parseFloat(total.toFixed(2));
+      // parsedData.items = items;
+
+      // Object.keys(items).forEach((key) => {
+      //   delete parsedData[key];
+      // });
 
       // If valid, save the file to disk
-      writeFileSync(filePath, file.buffer); // Write the file to disk
+      // writeFileSync(filePath, file.buffer); // Write the file to disk
       // Push the processed data to groupedData
-      groupedData.push({ ...parsedData, file_name: file.originalname });
+
       // await FinanceModel.create({
       //   ...parsedData,
       //   file_name: file.originalname,

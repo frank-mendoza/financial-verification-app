@@ -24,7 +24,7 @@ const Wrapper = styled.section`
   }
   p {
     line-height: 2;
-    color: var(--text-secondary-color);
+    /* color: var(--text-secondary-color); */
     margin-bottom: 1.5rem;
     max-width: 35em;
   }

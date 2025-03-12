@@ -1,5 +1,7 @@
 /* eslint-disable react/prop-types */
-import MoonLoader from "react-spinners/MoonLoader";
+import { Text } from "@chakra-ui/react";
+import SyncLoader from "react-spinners/SyncLoader";
+import "./styles.scss";
 
 const Loading = ({ loading }) => {
   if (!loading) return null;
@@ -11,21 +13,32 @@ const Loading = ({ loading }) => {
         width: "100%",
         zIndex: 999,
         display: "flex",
+        flexDirection: "column",
         left: 0,
         justifyContent: "center",
         alignItems: "center",
         top: 0,
-        backgroundColor: "#3837379e",
+        backgroundColor: "#2221219e",
       }}
     >
-      <MoonLoader
+      <SyncLoader
         color={"#fff"}
         loading={loading}
         // cssOverride={override}
-        size={50}
+        size={20}
         aria-label="Loading Spinner"
         data-testid="loader"
+        className="dot"
       />
+      <Text
+        mt={5}
+        fontSize={24}
+        fontWeight={600}
+        color={"#fff"}
+        className="dot text-loading"
+      >
+        Extracting Data
+      </Text>
     </div>
   );
 };
