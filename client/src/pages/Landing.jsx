@@ -7,18 +7,7 @@ import "./Landing.scss";
 import customFetch from "../utils/customFetch";
 import { useContext, useEffect, useRef, useState } from "react";
 import { Form } from "react-router-dom";
-import {
-  Accordion,
-  Avatar,
-  Button,
-  Center,
-  Dialog,
-  Flex,
-  HStack,
-  Image,
-  Portal,
-  Text,
-} from "@chakra-ui/react";
+import { Button, Center, Dialog, Flex } from "@chakra-ui/react";
 
 import {
   FileUploadDropzone,
@@ -27,7 +16,7 @@ import {
 } from "../components/ui/file-upload";
 
 import { AppContext } from "../context";
-import { CloseButton } from "../components/ui/close-button";
+import ExtractedDocumentDisplay from "./ExtractedDocumentDisplay";
 
 export const action = async () => {
   return null;
@@ -48,7 +37,6 @@ const Landing = () => {
   const [selectedFiles, setSelectedFiles] = useState([]);
   const [selectedFilesObj, setSelectedFilesObj] = useState(null);
   const [isVerified, setIsVerified] = useState(false);
-  const [openedDoc, setOpenedDoc] = useState("");
   const fileInputRef = useRef();
 
   console.log(verifiedDocs);
@@ -130,105 +118,6 @@ const Landing = () => {
     }
   };
 
-  const renderResults = () => {
-    if (verifiedDocs.length > 0) {
-      const updatedVerifiedDocs = verifiedDocs.map((obj) => {
-        const foundImg = selectedFiles.find(
-          (file) => file.name === obj.fileName
-        );
-
-        if (foundImg) {
-          return {
-            ...obj,
-            url: foundImg.url,
-          };
-        }
-      });
-
-      return (
-        <Portal>
-          <Dialog.Backdrop />
-          <Dialog.Positioner>
-            <Dialog.Content>
-              <Dialog.Header>
-                <Flex justifyContent={"space-between"}>
-                  <Dialog.Title>Extracted Documents</Dialog.Title>
-                  <Dialog.CloseTrigger asChild>
-                    <CloseButton size="sm" />
-                  </Dialog.CloseTrigger>
-                </Flex>
-              </Dialog.Header>
-              <Dialog.Body>
-                <Accordion.Root
-                  collapsible
-                  defaultValue={verifiedDocs[0]?.fileName}
-                  value={openedDoc}
-                  onValueChange={(e) => setOpenedDoc(e.value)}
-                >
-                  {updatedVerifiedDocs.map((item, index) => (
-                    <Accordion.Item key={index} value={item?.fileName}>
-                      <Accordion.ItemTrigger>
-                        <Avatar.Root shape="rounded">
-                          <Avatar.Image src={item.url} objectFit={"cover"} />
-                          <Avatar.Fallback name={item.fileName} />
-                        </Avatar.Root>
-                        <HStack flex="1">{item.fileName} </HStack>
-                        <Accordion.ItemIndicator />
-                      </Accordion.ItemTrigger>
-                      <Accordion.ItemContent>
-                        <Accordion.ItemBody>
-                          <Flex gap={10} flexDirection={"column"}>
-                            <Image
-                              width="500px"
-                              // height="200px"
-                              src={item.url}
-                            />
-
-                            <div>
-                              {/* <Heading size={"md"}>Document details:</Heading> */}
-                              {Object.entries(item).map(([key, value]) => {
-                                const formattedKey = key
-                                  .replace(/([A-Z])/g, " $1")
-                                  .replace(/^./, (str) => str.toUpperCase());
-
-                                if (key === "fileName" || key === "url")
-                                  return null;
-                                return (
-                                  <Flex my={5} gap={5} key={key}>
-                                    <Text fontSize={"1xl"} fontWeight={500}>
-                                      {formattedKey}:
-                                    </Text>{" "}
-                                    <Text fontSize={"1xl"}>
-                                      {" "}
-                                      {typeof value === "number"
-                                        ? "₱"
-                                        : null}{" "}
-                                      {value}
-                                    </Text>
-                                  </Flex>
-                                );
-                              })}
-                            </div>
-                          </Flex>
-                        </Accordion.ItemBody>
-                      </Accordion.ItemContent>
-                    </Accordion.Item>
-                  ))}
-                </Accordion.Root>
-              </Dialog.Body>
-              <Dialog.Footer>
-                <Dialog.ActionTrigger asChild>
-                  <Button variant="outline">Close</Button>
-                </Dialog.ActionTrigger>
-                <Button>Export File</Button>
-              </Dialog.Footer>
-            </Dialog.Content>
-          </Dialog.Positioner>
-        </Portal>
-      );
-    }
-  };
-
   useEffect(() => {
     // Cleanup blob URLs when component unmounts or imageSrc changes
     return () => {
@@ -243,13 +132,23 @@ const Landing = () => {
   return (
     <Wrapper>
       <div className="landing">
-        <div className="info">
+        <Flex
+          className="info"
+          justifyContent={"center"}
+          flexDirection={"column"}
+          minWidth={"70%"}
+          width={"60%"}
+        >
           <h1>
             Financial <span>Statement</span>
             <br /> Verification <span> App </span>
           </h1>
 
-          <Center flexDirection={"column"}>
+          <Center
+            // width={600}
+            flexDirection={"column"}
+            justifyContent={"center"}
+          >
             <Form method="post" className="form">
               <FileUploadRoot
                 onFileChange={handleFileChange}
@@ -274,6 +173,7 @@ const Landing = () => {
                     style={{ height: "auto" }}
                     lazyMount
                     open={open}
+                    closeOnInteractOutside={false}
                     onOpenChange={(e) => setOpen(e.open)}
                     size="xl"
                     placement="center"
@@ -289,7 +189,10 @@ const Landing = () => {
                       </Button>
                     </Dialog.Trigger>
 
-                    {renderResults()}
+                    <ExtractedDocumentDisplay
+                      data={verifiedDocs}
+                      selectedFiles={selectedFiles}
+                    />
                   </Dialog.Root>
                 ) : (
                   <Button
@@ -318,7 +221,7 @@ const Landing = () => {
               </div>
             </Form>
           </Center>
-        </div>
+        </Flex>
       </div>
 
       <Loading loading={loading} />
